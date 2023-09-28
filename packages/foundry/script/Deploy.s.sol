@@ -3,11 +3,14 @@ pragma solidity ^0.8.19;
 
 import "../contracts/YourContract.sol";
 import "./DeployHelpers.s.sol";
+import {compile, create} from "huff-runner/Deploy.sol";
+
+using { create } for bytes;
 
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
 
-    function run() external {
+    function run() external returns(Deployment[] memory){
         uint256 deployerPrivateKey = setupLocalhostEnv();
         if (deployerPrivateKey == 0) {
             revert InvalidPrivateKey(
@@ -24,6 +27,15 @@ contract DeployScript is ScaffoldETHDeploy {
                 vm.toString(address(yourContract))
             )
         );
+
+        address addition = compile(vm, "contracts/huff/Addition.huff").create({value: 0});
+        deployments.push(Deployment({name: "Addition", addr: addition}));
+        console.logString(
+            string.concat(
+                "Addition deployed at: ",
+                vm.toString(address(yourContract))
+            )
+        );
         vm.stopBroadcast();
 
         /**
@@ -32,7 +44,7 @@ contract DeployScript is ScaffoldETHDeploy {
          * This function should be called last.
          */
         exportDeployments();
+        return deployments;
     }
 
-    function test() public {}
 }
