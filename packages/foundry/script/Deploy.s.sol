@@ -18,22 +18,25 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        YourContract yourContract = new YourContract(
-            vm.addr(deployerPrivateKey)
-        );
+        // YourContract yourContract = new YourContract(
+        //     vm.addr(deployerPrivateKey)
+        // );
+        // console.logString(
+        //     string.concat(
+        //         "YourContract deployed at: ",
+        //         vm.toString(address(yourContract))
+        //     )
+        // );
+
+        address ycontract = compile(vm, "contracts/huff/YourContract.huff").create({value: 0});
+        deployments.push(Deployment({
+            name: "YourContract",
+            addr: ycontract
+        }));
         console.logString(
             string.concat(
                 "YourContract deployed at: ",
-                vm.toString(address(yourContract))
-            )
-        );
-
-        address addition = compile(vm, "contracts/huff/Addition.huff").create({value: 0});
-        deployments.push(Deployment({name: "Addition", addr: addition}));
-        console.logString(
-            string.concat(
-                "Addition deployed at: ",
-                vm.toString(address(yourContract))
+                vm.toString(address(ycontract))
             )
         );
         vm.stopBroadcast();

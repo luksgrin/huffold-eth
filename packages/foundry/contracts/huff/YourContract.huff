@@ -1,0 +1,247 @@
+// Contract ABI
+#define function greeting() nonpayable returns (string)
+#define function owner() nonpayable returns (address)
+#define function premium() nonpayable returns (bool)
+#define function totalCounter() nonpayable returns (uint256)
+#define function userGreetingCounter(address) nonpayable returns (uint256)
+#define function setGreeting(string) payable returns ()
+#define function withdraw() nonpayable returns ()
+
+// Events
+#define event GreetingChange(address indexed, string, bool, uint256)
+
+// Constants
+#define constant INITIAL_GREETING_RIGHT_PADDED_AND_LENGTHED = 0x4275696c64696e6720556e73746f707061626c6520417070732121210000001c
+
+// Storage Variables
+#define constant OWNER = FREE_STORAGE_POINTER()
+#define constant GREETING = FREE_STORAGE_POINTER()
+#define constant PREMIUM = FREE_STORAGE_POINTER()
+#define constant TOTAL_COUNTER = FREE_STORAGE_POINTER()
+#define constant USER_GREETING_COUNTER = FREE_STORAGE_POINTER()
+
+// Helper macros
+
+// hashmap helper macros taken from https://github.com/huff-language/huffmate
+/// @notice Given a piece of data (ie an address), hash it, generating the storage slot for a hashmap.
+#define macro GET_SLOT_FROM_KEY(mem_ptr) = takes(1) returns(1) {
+    // Input stack: [key]
+    // Load the data into memory and hash it, while preserving the memory location.
+    <mem_ptr>   // [<mem_ptr>, key]
+    mstore      // []
+
+    // Hash the data, generating a key.
+    0x20                // [0x20]
+    <mem_ptr>           // [<mem_ptr>, 0x20]
+    sha3                // [slot]
+}
+
+/// @notice Store an element from a key
+#define macro STORE_ELEMENT(mem_ptr) = takes(2) returns(0) {
+    // Input stack: [key, value]
+    GET_SLOT_FROM_KEY(<mem_ptr>)    // [slot, value]
+    sstore                          // []
+}
+/// @notice Load an element onto the stack from a key
+#define macro LOAD_ELEMENT(mem_ptr) = takes(1) returns(1) {
+    // Input stack: [key]
+    GET_SLOT_FROM_KEY(<mem_ptr>)    // [slot]
+    sload                           // [value]
+}
+
+
+// Modifier macros
+#define macro IS_OWNER() = takes (0) returns (0) {
+    caller                   // [msg.sender]
+    [OWNER] sload            // [owner, msg.sender]
+    eq                       // [owner == msg.sender]
+    is_owner jumpi           // []
+
+    // Revert if the sender is not the owner
+    0x00 0x00 revert
+
+    is_owner:
+}
+
+// Function macros
+#define macro SET_GREETING() = takes(0) returns(0) {
+    // Reads string from calldata and stores it in storage
+    0x24            // [0x04]
+    calldataload    // [str_len]
+    0x44            // [0x44, str_len]
+    calldataload    // [str, str_len]
+    or              // [str_and_len]
+    dup1
+    [GREETING]      // [GREETING_ptr, str_and_len, str_and_len]
+    sstore          // [str_and_len]
+
+    [TOTAL_COUNTER] // [TOTAL_COUNTER_ptr, str_and_len]
+    sload           // [total_counter, str_and_len]
+    0x01            // [0x01, total_counter, str_and_len]
+    add             // [total_counter + 1, str_and_len]
+    [TOTAL_COUNTER] // [TOTAL_COUNTER_ptr, total_counter + 1, str_and_len]
+    sstore          // [str_and_len]
+
+    caller              // [msg.sender, str_and_len]
+    LOAD_ELEMENT(0x00)  // [user_greeting_counter, str_and_len]
+    0x01                // [0x01, user_greeting_counter, str_and_len]
+    add                 // [user_greeting_counter + 1, str_and_len]
+    caller              // [msg.sender, user_greeting_counter + 1, str_and_len]
+    STORE_ELEMENT(0x00) // [str_and_len]
+
+    callvalue           // [msg.value, str_and_len]
+    0x00                // [0x00, msg.value, str_and_len]
+    gt                  // [msg.value > 0, str_and_len]
+    dup1                // [msg.value > 0, msg.value > 0, str_and_len]
+    [PREMIUM]           // [PREMIUM_ptr, msg.value > 0, msg.value > 0, str_and_len]
+    sstore              // [msg.value > 0, str_and_len]
+
+    callvalue           // [msg.value, msg.value > 0, str_and_len]
+    swap2               // [str_and_len, msg.value > 0, msg.value]
+    caller              // [msg.sender, str_and_len, msg.value > 0, msg.value]
+    0x00                // [0x00, msg.sender, str_and_len, msg.value > 0, msg.value]
+    0x80                // [0x80, 0x00, msg.sender, str_and_len, msg.value > 0, msg.value]
+    log4
+
+    stop
+}
+
+// Getter macros
+#define macro GET_GREETING() = takes(0) returns(0) {
+    0x20        // [0x20]
+    0x00        // [0x00, 0x20]
+    mstore      // []
+    [GREETING]  // [GREETING_ptr]
+    sload       // [value]
+    dup1        // [value, value]
+    0xff        // [0xff, value, value]
+    and         // [str_len, value]
+    0x20        // [0x20, str_len, value]
+    mstore      // [value]
+    0xff        // [0xff, value]
+    not         // [~0xff, value]
+    and         // [str]
+    0x40        // [0x40, value]
+    mstore      // []
+    0x60        // [0x60]
+    0x00        // [0x00, 0x60]
+    return      // []
+}
+
+#define macro GET_OWNER() = takes(0) returns(0) {
+    [OWNER] // [OWNER_ptr]
+    sload    // [value]
+    0x00     // [0x00, value]
+    mstore   // []
+    0x20     // [0x20]
+    0x00     // [0x00, 0x20]
+    return   // []
+}
+
+#define macro GET_PREMIUM() = takes(0) returns(0) {
+    [PREMIUM] // [PREMIUM_ptr]
+    sload     // [value]
+    0x00      // [0x00, value]
+    mstore    // []
+    0x20      // [0x20]
+    0x00      // [0x00, 0x20]
+    return    // []
+}
+
+#define macro GET_TOTAL_COUNTER() = takes(0) returns(0) {
+    [TOTAL_COUNTER] // [TOTAL_COUNTER_ptr]
+    sload    // [value]
+    0x00     // [0x00, value]
+    mstore   // []
+    0x20     // [0x20]
+    0x00     // [0x00, 0x20]
+    return   // []
+}
+
+#define macro GET_USER_GREETING_COUNTER() = takes(0) returns(0) {
+    0x24            // [0x24]
+    calldataload    // [user_address]
+    LOAD_ELEMENT(0x00) // [user_greeting_counter]
+    0x00     // [0x00, user_greeting_counter]
+    mstore   // []
+    0x20     // [0x20]
+    0x00     // [0x00, 0x20]
+    return   // []
+}
+
+#define macro WITHDRAW() = takes(0) returns(0) {
+    IS_OWNER() // []
+    0x00 0x00 0x00 0x00 // [0x00, 0x00, 0x00, 0x00]
+    balance    // [this.balance, 0x00, 0x00, 0x00, 0x00]
+    caller     // [msg.sender, this.balance, 0x00, 0x00, 0x00, 0x00]
+    gas        // [gas, msg.sender, this.balance, 0x00, 0x00, 0x00, 0x00]
+    call       // [success]
+    call_succeded jumpi // []
+
+    // Revert if the call failed
+    0x00 0x00 revert
+
+    call_succeded:
+        stop
+}
+
+// Constructor macro
+#define macro CONSTRUCTOR() = takes (0) returns (0) {
+
+    // Set msg.sender as the owner
+    caller  // [msg.sender]
+    [OWNER] // [OWNER_ptr, msg.sender]
+    sstore  // []
+
+    // Set "Building Unstoppable Apps!!!" as the initial greeting
+    [INITIAL_GREETING_RIGHT_PADDED_AND_LENGTHED] // [INITIAL_GREETING]
+    [GREETING] // [GREETING_ptr, INITIAL_GREETING]
+    sstore // []
+
+    // Set the premium to false
+    0x00 // [0x00]
+    [PREMIUM] // [PREMIUM_ptr, 0x00]
+    sstore // []
+
+    // Set the total counter to 0
+    0x00 // [0x00]
+    [TOTAL_COUNTER] // [TOTAL_COUNTER_ptr, 0x00]
+    sstore // []
+}
+
+// Main macro
+#define macro MAIN() = takes(0) returns(0) {
+    // Get the function selector from calldata
+    0x00            // [0x00]
+    calldataload    // [selector_right_padded_to_32_bytes]
+    0xe0            // [0xe0, selector_right_padded_to_32_bytes]
+    shr             // [selector]
+
+    // Dispatch to the correct function
+    dup1 __FUNC_SIG(owner) eq getOwner jumpi // Compare selector to owner()
+    dup1 __FUNC_SIG(greeting) eq getGreeting jumpi // Compare selector to greeting()
+    dup1 __FUNC_SIG(premium) eq getPremium jumpi // Compare selector to premium()
+    dup1 __FUNC_SIG(totalCounter) eq getTotalCounter jumpi // Compare selector to totalCounter()
+    dup1 __FUNC_SIG(userGreetingCounter) eq getUserGreetingCounter jumpi // Compare selector to userGreetingCounter(address)
+    dup1 __FUNC_SIG(setGreeting) eq setGreeting jumpi // Compare selector to setGreeting(string)
+    dup1 __FUNC_SIG(withdraw) eq withdraw jumpi // Compare selector to withdraw()
+
+    // Stop to avoid running into the dispatcher
+    stop
+
+    // dispatch
+    getOwner:
+        GET_OWNER()
+    getGreeting:
+        GET_GREETING()
+    getPremium:
+        GET_PREMIUM()
+    getTotalCounter:
+        GET_TOTAL_COUNTER()
+    getUserGreetingCounter:
+        GET_USER_GREETING_COUNTER()
+    setGreeting:
+        SET_GREETING()
+    withdraw:
+        WITHDRAW()
+}

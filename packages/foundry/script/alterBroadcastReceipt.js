@@ -76,7 +76,6 @@ function main() {
             console.error(`Error modifying broadcast receipt: ${err}`);
             process.exit(1);
           }
-          console.log('JSON file updated successfully.');
         });
       } else {
         console.error('The "transactions" field is not an array in the JSON object.');
