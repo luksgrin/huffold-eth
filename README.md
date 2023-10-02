@@ -28,11 +28,15 @@ To get started with Scaffold-ETH 2, follow the steps below:
 
 1. Clone this repo & install dependencies
 
+
+
 ```
-git clone https://github.com/scaffold-eth/scaffold-eth-2.git
-cd scaffold-eth-2
+git clone https://github.com/luksgrin/huffold-eth.git
+cd huffold-eth
 yarn install
 ```
+
+_If installation does not work out properly, try `cd huffold-eth/packages/foundry; forge install`..._
 
 2. Run a local network in the first terminal:
 
@@ -48,7 +52,7 @@ This command starts a local Ethereum network using Anvil. The network runs on yo
 yarn deploy
 ```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+This command deploys a test smart contract to the local network. The Huff contract is located in `packages/foundry/contracts/huff` and can be modified to suit your needs. The `yarn deploy` command uses the minimal deploy script located in `packages/foundry/script` to deploy the contract to the network. You can also customize the deploy script.
 
 4. On a third terminal, start your NextJS app:
 
